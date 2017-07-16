@@ -1,0 +1,131 @@
+#!/bin/sh
+### FreezeDry ###
+# Hand written installer for Freon Linux
+# (C) Chris Dorman, 2017 LGPLv2
+
+# Include Freon Linux's config
+. /etc/conf.d/main.conf
+. /etc/conf.d/status
+
+# Check if script was ran by root
+if [ "$(id -u)" != "0" ]; then
+  echo -e "[$RED Error $NORMAL] This script needs to be executed by root."
+  exit 1
+fi
+
+# Move to root of filesystem
+cd /
+
+case $1 in
+	install) 
+	    if [ ! -f "$2" ]; then
+	        echo "Error: $2 doesn't exist. exit."
+	        exit 1
+	    fi
+	    
+	    # Include config file
+	    . $2
+	    
+	    # Make directories if they don't exist
+	    if [ ! -d "/mnt/inst" ]; then
+	        mkdir /mnt/inst
+	    fi
+	    
+	    if [ ! -d "/mnt/target" ]; then
+	        mkdir /mnt/target
+	    fi
+	    
+	    # Format device partition
+	    echo -e "[$YELLOW Working $NORMAL] Formatting installation partition"
+	    echo -n "Formatting..."
+	    mkfs.ext2 $DEVPARTITION > /dev/null 2>&1
+	    status
+	    
+	    echo -e "[$YELLOW Working $NORMAL] Mounting filesystems for installation"
+	    echo -n "Installation media..."
+	    mount $INSTMEDIA /mnt/inst > /dev/null 2>&1
+	    status
+	    
+	    echo -n "Device: $DEVPARTITION..."
+	    mount $DEVPARTITION /mnt/target > /dev/null 2>&1
+	    status
+	    
+	    echo -e "[$YELLOW Working $NORMAL] Copying and extracting system files"
+	    echo -n "Copying filesystem..."
+	    cd /mnt/inst
+	    
+	    cp boot/rootfs.gz /mnt/target
+	    status
+	    
+	    echo -n "Copying Linux kernel..."
+	    
+	    mkdir /mnt/target/boot
+	    cp boot/bzImage /mnt/target/boot
+	    status
+	    
+	    echo -n "Extracting filesystem..."
+	    cd ../target
+	    
+	    zcat rootfs.gz | cpio -id > /dev/null 2>&1
+	    status
+	    
+	    echo -e "[$YELLOW Working $NORMAL] Installing bootloader to $DEVICE"
+	    echo -n "Executing grub-install..."
+	    
+	    grub-install --root-directory=/mnt/target /dev/hda --directory=/lib/grub/i386-pc > /dev/null 2>&1
+	    status
+	    
+	    echo -n "Generating makefile..."
+	    
+	    echo "#
+# /boot/grub/grub.cfg - freon grub2 config file
+
+# Set menu colors
+set menu_color_normal=white/blue
+set menu_color_highlight=light-blue/white
+
+# Set menu display time
+set timeout=10
+
+# Set the default boot entry (first is 0)
+set default=0
+
+
+# Boot entries:
+
+# CRUX
+menuentry \"Freon Linux $FREONVERSION\" {
+	linux /boot/bzImage root=$DEVPARTITION
+}  
+	    " >> /mnt/target/boot/grub/grub.cfg
+	    status
+	   ;;
+	
+	config) 
+	    case $2 in
+	        *)
+				echo "### FreezeDry configuration file ###
+# Installation media device (Hardware with Freon's system files)
+# Examples:
+#    CDROM: /dev/cdrom
+#    USB: /dev/sda1
+INSTMEDIA=\"/dev/cdrom\"
+
+# Installation device (Hardware used for the Freon installation)
+# Example: /dev/hda
+DEVICE=\"/dev/hda\"
+
+# Device partition (Used for the Freon installation)
+# Example: /dev/hda1: First partition of device hda
+DEVPARTITION=\"/dev/hda1\"" >> $2
+            ;;
+	    esac
+	    ;;
+	help|*) 
+	    echo "FreezeDry: Freon Installer ~ Install Freon Linux to a device"
+		echo "Usage: "
+	    echo "  freezedry install <path to config file>: Install Freon Linux"
+		echo "  freezedry config <path to config>      : Create a default config";;
+esac
+
+exit 0

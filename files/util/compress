@@ -1,0 +1,4 @@
+#!/bin/sh
+
+tar -vcf $1.tar $1
+xz -z $1.tar

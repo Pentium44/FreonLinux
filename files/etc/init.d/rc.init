@@ -1,0 +1,73 @@
+#!/bin/sh
+
+. /etc/conf.d/status
+. /etc/conf.d/main.conf
+. /etc/conf.d/static_network.conf
+
+# clear
+clear
+
+# Welcome message!
+echo "Welcome to a Generic Linux Build!"
+
+echo -n "Checking some local paths..."
+
+# Check if mtab is linked to mounts
+if [ ! -L /etc/mtab ]; then
+  ln -s /proc/mounts /etc/mtab
+fi
+
+# Check to see if keymap exists
+if [ ! -f /usr/share/kmap/$KMAP.kmap ]; then
+  /bin/busybox dumpkmap /usr/share/kmap/$KMAP.kmap
+fi
+
+status
+
+# mount proc on boot
+echo -n "Mounting proc..."
+mount proc > /dev/null 
+status
+
+# Remount rootfs with read and write
+echo -n "Remounting rootfs... "
+/bin/mount -o remount,rw / > /dev/null
+status
+
+# Set hostname
+echo -n "Setting hostname... "
+/bin/hostname -F /etc/hostname > /dev/null
+status
+
+# Configure network loopback
+echo -n "Configuring network loopback... "
+/sbin/ifconfig lo 127.0.0.1 up
+/sbin/route add 127.0.0.1 lo
+status
+
+# Get eth0 linked up
+echo -n "Prepare $NETINTERFACE... "
+/sbin/ifconfig $NETINTERFACE up > /dev/null
+status
+
+# Start network
+if [ "$NETTYPE" = "dynamic" ] ; then
+  echo -n "Starting UDHCPC... "
+  /sbin/udhcpc -b -i $NETINTERFACE -p /var/run/udhcpc.$NETINTERFACE.pid > /dev/null
+  status
+else
+  echo -n "Static IP set, starting $IP on $NETINTERFACE... "
+  /sbin/ifconfig $NETINTERFACE $IP netmask $MASK up
+  /sbin/route add default gateway $GATEWAY
+  echo -n "nameserver $DNS_SERVER" > /etc/resolv.conf
+fi
+
+echo -n "Loading Keymap..."
+/sbin/loadkmap < /usr/share/kmap/$KMAP.kmap
+status
+
+# clear screen before getty is enabled
+clear
+
+# Show login prompt
+getty 9600 tty1

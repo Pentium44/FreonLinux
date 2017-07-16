@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "Packing $1"
+cd $1/
+tar -czf $1.tgz *
+mv $1.tgz ../
+cd ..
+mv $1.tgz $1.pak
