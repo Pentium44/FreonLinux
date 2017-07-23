@@ -358,7 +358,7 @@ do_utilities() {
   echo -e "[$YELLOW Working $NORMAL] Installing Freon utilities"
   echo -n "Copying files..."
   
-  cp -a ../files/share/thaw rootfs/share/thaw
+  cp -a ../files/share/thaw rootfs/usr/share/thaw
   status_silent
   
   cp -a ../files/bin/* rootfs/bin

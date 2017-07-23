@@ -35,6 +35,11 @@ if [ ! -d "$DEPPATH" ]; then
 	mkdir $DEPPATH
 fi
 
+# Check if any packages are installed, if not fix before break
+if [ ! -d "$INSTALLEDPKG" ]; then
+	mkdir $INSTALLEDPKG
+fi
+
 case $1 in
 	get-install ) 
 		echo ""
@@ -57,14 +62,14 @@ case $1 in
 		then
 			echo ""
 			echo "Downloading ${2}..."
-			wget $(cat $MIRRORFILE)/$FREONVERSION/$2.npak -P $DEPPATH
+			wget $(cat $MIRRORFILE)/$FREONVERSION/$2.pak -P $DEPPATH
 		else
 			echo "${2} was not found in repository."
 			exit 1
 		fi
 		
 		echo -n "Extracting package to tmp... "
-		mv $DEPPATH/$2.npak $DEPPATH/$2.tar.gz
+		mv $DEPPATH/$2.pak $DEPPATH/$2.tar.gz
 		mkdir $TMPPATH/$2
 		gunzip $DEPPATH/$2.tar.gz
 		tar -xf $DEPPATH/$2.tar -C $TMPPATH/$2
@@ -93,7 +98,7 @@ case $1 in
 					echo "${line} already installed"
 				else
 					echo "Installing ${line} for ${2}"
-					nutrapak get-install $line
+					thaw get-install $line
 				fi
 			done < $TMPPATH/$2/deps
 			echo "++++++++++++++++++++++++++++++++++++++++"
@@ -157,8 +162,9 @@ case $1 in
 
 	* )
 		echo "Usage: 	
-thaw get-install <package>
-thaw update-list
+thaw get-install <package> : Install a package
+thaw update-list           : Update system package list
+thaw search <query>        : Search for a package in the database
 		"
 		;;
 
