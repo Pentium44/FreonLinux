@@ -350,7 +350,14 @@ do_grub()
   cp ../../files/sbin/grub-mkconfig ../rootfs/sbin > /dev/null 2>&1
   status
   
+  cd ../rootfs
+  
+  echo -n "Stripping grub..."
+  strip -s rootfs/bin/grub-* > /dev/null 2>&1
+  strip -s rootfs/sbin/grub-* > /dev/null 2>&1
   cd ..
+  status 
+  
 }
 
 # Install Freon utilities
@@ -358,11 +365,16 @@ do_utilities() {
   echo -e "[$YELLOW Working $NORMAL] Installing Freon utilities"
   echo -n "Copying files..."
   
+  # Create some directories for thaw
   cp -a ../files/share/thaw rootfs/usr/share/thaw
+  status_silent
+  
+  mkdir rootfs/tmp/thaw
   status_silent
   
   cp -a ../files/bin/* rootfs/bin
   status
+  
 }
 
 # Configure rootfs for live boot
@@ -545,9 +557,16 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
 # generate initramfs for live boot.
 gen_rootfs()
 {
-  echo -e -n "[$YELLOW Working $NORMAL] Generating initramfs."
+  echo -e "[$YELLOW Working $NORMAL] Generating filesystem..."
   
   cd rootfs
+  
+  echo -n "Stripping build..."
+  strip -s lib/*.so > /dev/null 2>&1
+  strip -s bin/busybox > /dev/null 2>&1
+  status
+  
+  echo -n "Compressing filesystem..."
   find . -print | cpio -o -H newc | gzip -9 > ../rootfs.gz 2>&1
   status
   

@@ -8,7 +8,7 @@
 clear
 
 # Welcome message!
-echo "Welcome to a Generic Linux Build!"
+echo "Welcome to Freon Linux!"
 
 echo -n "Checking some local paths..."
 
@@ -25,14 +25,23 @@ fi
 status
 
 # mount proc on boot
-echo -n "Mounting proc..."
-mount proc > /dev/null 
+echo -n "Mounting /proc..."
+/bin/mount -t proc proc /proc -o nosuid,noexec,nodev
+status
+
+# mount /sys
+echo -n "Mounting /sys..."
+/bin/mount -t sysfs sys /sys -o nosuid,noexec,nodev
 status
 
 # Remount rootfs with read and write
 echo -n "Remounting rootfs... "
 /bin/mount -o remount,rw / > /dev/null
 status
+
+# Deal with mdev
+/sbin/mdev -s
+echo /sbin/mdev > /proc/sys/kernel/hotplug
 
 # Set hostname
 echo -n "Setting hostname... "
