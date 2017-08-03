@@ -19,5 +19,6 @@ status()
     else
       echo -e "[ \e[0;31mFAILED\e[0m ]"
       echo "Errors where found."
+      exit 1
     fi
 }

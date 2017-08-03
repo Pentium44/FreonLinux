@@ -71,13 +71,6 @@ if [ ! -d "src" ]; then
   status
 fi
 
-if [ -d "src/rootfs" ]; then
-  echo -e "[$YELLOW Warning $NORMAL] Rootfs tree still exists."
-  echo -n "Cleaning build tree..."
-  rm -r src/rootfs > /dev/null 2>&1
-  status
-fi
-
 # check to see if source dir exists, if not create
 if [ ! -d src ]; then
 	mkdir src
@@ -93,6 +86,13 @@ esac
 # Download source code
 get_files()
 {
+  if [ -d "src/rootfs" ]; then
+    echo -e "[$YELLOW Warning $NORMAL] Rootfs tree still exists."
+    echo -n "Cleaning build tree..."
+    rm -r src/rootfs > /dev/null 2>&1
+    status
+  fi
+
   #echo " " # This is used to keep next echo from moving around
   echo -e "[$YELLOW Working $NORMAL] Downloading needed files..."
   if [ ! -f $kernel ]; then
@@ -452,9 +452,9 @@ networks:   files
   #cp -a ../$kerneldir/_pkg/* .
   #status
   
-  echo -n "Copying kernel headers..."
-  cp -a ../$kerneldir/_hdr/* .
-  status
+  #echo -n "Copying kernel headers..."
+  #cp -a ../$kerneldir/_hdr/* .
+  #status
   
   echo -n "Finishing up..."
   echo "# /etc/securetty: List of terminals on which root is allowed to login.
@@ -551,6 +551,8 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
   
   status
   
+  rm lib/*.a # In base-dev package
+  
   cd ..
 }
 
@@ -572,6 +574,19 @@ gen_rootfs()
   
   cd ..
   
+}
+
+regen_rootfs_bare()
+{
+  echo -e "[$YELLOW Working $NORMAL] Generating filesystem..."
+  
+  cd rootfs
+  
+  echo -n "Compressing filesystem..."
+  find . -print | cpio -o -H newc | gzip -9 > ../rootfs.gz 2>&1
+  status
+  
+  cd ..
 }
 
 # setup bootloader for iso
@@ -628,17 +643,147 @@ gen_iso()
    
 }
 
-# Move to src dir
+do_refer()
+{
+  echo -e "[$YELLOW Working $NORMAL] Reconfiguring root filesystem"
+  
+  cd rootfs
+  
+  echo -n "Configuring networking..."
+  echo "127.0.0.1	localhost" > etc/hosts
+  echo "localhost	127.0.0.1" > etc/networks
+  echo "linux" > etc/hostname
+  echo "order hosts,bind" > etc/host.conf 
+  echo "multi on" >> etc/host.conf 
+  
+  echo "# loopback
+auto lo
+iface lo inet loopback
+
+# Ethernet // this is default and can be changed for per system
+auto eth0
+iface eth0 inet dhcp
+" > etc/network/interfaces
+  
+  echo "
+# /etc/nsswitch.conf: GNU Name Service Switch config.
+#
+
+passwd:     files
+group:      files
+shadow:     files
+
+hosts:      files dns
+networks:   files
+" > etc/nsswitch.conf 
+  status
+  
+  echo -n "Setting up default users and groups..."
+  echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
+  echo "root::13525:0:99999:7:::" > etc/shadow
+  echo "root:x:0:" > etc/group
+  echo "root:*::" > etc/gshadow
+  chmod 640 etc/shadow
+  chmod 640 etc/gshadow
+  status
+  
+  echo -n "Finishing up..."
+  echo "# /etc/securetty: List of terminals on which root is allowed to login.
+#
+console
+
+# For people with serial port consoles
+ttyS0
+
+# Standard consoles
+tty1
+tty2
+tty3
+tty4
+tty5
+tty6
+tty7" > etc/securetty
+
+  echo "/bin/sh" > etc/shells
+  echo "/bin/ash" >> etc/shells
+  
+  echo "Freon Linux $endtag \r \l" > etc/issue
+  echo "" >> etc/issue
+  
+  echo "Freon Linux, welcome..." > etc/motd
+
+  echo "[SUID]
+# Allow command to be run by anyone.
+su = ssx root.root
+passwd = ssx root.root
+loadkmap = ssx root.root
+mount = ssx root.root
+reboot = ssx root.root
+halt = ssx root.root" > etc/busybox.conf 
+
+  chmod 600 etc/busybox.conf 
+  
+  echo "::sysinit:/etc/init.d/rc.init
+::respawn:-/bin/sh
+tty2::askfirst:-/bin/sh
+::ctrlaltdel:/bin/umount -a -r
+::ctrlaltdel:/sbin/reboot" > etc/inittab
+
+  echo "# /etc/profile: system-wide .profile file for the Bourne shells
+
+PATH=\"/usr/sbin:/usr/bin:/sbin:/bin\"
+LD_LIBRARY_PATH=\"/usr/lib:/lib\"
+
+NORMAL=\"\\[\\e[0m\\]\"
+RED=\"\\[\\e[0;31m\\]\"
+GREEN=\"\\[\\e[0;32m\\]\"
+BLUE=\"\\[\\e[0;34m\\]\"
+YELLOW=\"\\[\\e[1;33m\\]\"
+MAGENTA=\"\\[\\e[0;35m\\]\"
+CYAN=\"\\[\\e[0;36m\\]\"
+
+if [ \"\`id -u\`\" -eq 0 ]; then
+  PS1=\"$RED\\u$GREEN@$BLUE\\h [ $MAGENTA\\w$BLUE ]# \$NORMAL\"
+else
+  PS1=\"$RED\\u$GREEN@$BLUE\\h [ $MAGENTA\\w$BLUE ]\\\$ \$NORMAL\"
+fi
+
+export PATH LD_LIBRARY_PATH PS1 DISPLAY ignoreeof
+umask 022
+
+export G_FILENAME_ENCODING=iso8859-1
+" > etc/profile
+
+  echo "proc            /proc        proc    defaults          0       0
+sysfs           /sys         sysfs   defaults          0       0
+devpts          /dev/pts     devpts  defaults          0       0
+tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
+
+  rm etc/init.d/*
+  rm etc/conf.d/*
+  
+  cp ../../files/etc/init.d/rc.init etc/init.d/
+  cp -a ../../files/etc/conf.d etc
+  
+  cd ..
+}
+
 cd src
 
-# call functions
-get_files
-do_kernel
-do_busybox
-do_libc
-do_grub
-configure_system
-do_utilities
-gen_rootfs
-do_isolinux
-gen_iso
+case $1 in
+	refer) do_refer
+		regen_rootfs_bare
+		do_isolinux
+		gen_iso;;
+
+    *) get_files
+		do_kernel
+		do_busybox
+		do_libc
+		do_grub
+		configure_system
+		do_utilities
+		gen_rootfs
+		do_isolinux
+		gen_iso;;
+esac
