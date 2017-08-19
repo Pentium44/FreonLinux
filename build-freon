@@ -86,10 +86,10 @@ esac
 # Download source code
 get_files()
 {
-  if [ -d "src/rootfs" ]; then
+  if [ -d "rootfs" ]; then
     echo -e "[$YELLOW Warning $NORMAL] Rootfs tree still exists."
     echo -n "Cleaning build tree..."
-    rm -r src/rootfs > /dev/null 2>&1
+    rm -r rootfs > /dev/null 2>&1
     status
   fi
 
