@@ -47,7 +47,7 @@ case $1 in
 		if [ ! -s $PKGLIST ]; then
 			rm $PKGLIST
 			echo "Getting package list... "
-			wget $(cat $MIRRORFILE)/$FREONVERSION/$PKGLISTNAME -P $THAWROOT
+			wget $(cat $MIRRORFILE)/$PKGLISTNAME -P $THAWROOT
 		fi
 		
 		# check if package is already installed
@@ -62,7 +62,7 @@ case $1 in
 		then
 			echo ""
 			echo "Downloading ${2}..."
-			wget $(cat $MIRRORFILE)/$FREONVERSION/$2.pak -P $DEPPATH
+			wget $(cat $MIRRORFILE)/$2.pak -P $DEPPATH
 		else
 			echo "${2} was not found in repository."
 			exit 1
@@ -135,13 +135,13 @@ case $1 in
 		echo ""
 		;;
 	
-	update-list )
+	update )
 		if [ -f $PKGLIST ]; then
 			rm $PKGLIST
 		fi
 		
 		echo "Getting package list... "
-		wget $(cat $MIRRORFILE)/$FREONVERSION/$PKGLISTNAME -P $THAWROOT
+		wget $(cat $MIRRORFILE)/$PKGLISTNAME -P $THAWROOT
 		status_serious
 		;;
 		
@@ -149,7 +149,7 @@ case $1 in
 		if [ ! -s $PKGLIST ]; then
 			rm $PKGLIST
 			echo "Getting package list... "
-			wget $(cat $MIRRORFILE)/$FREONVERSION/$PKGLISTNAME -P $THAWROOT
+			wget $(cat $MIRRORFILE)/$PKGLISTNAME -P $THAWROOT
 			status_serious
 		fi
 		
