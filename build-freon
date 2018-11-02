@@ -1,10 +1,11 @@
 #!/bin/bash
 # Build linux system and generate ISO
-# (C) Chris Dorman, 2015 - GPLv3+
+# Version: 0.2.1
+# (C) Chris Dorman, 2014-2018 - GPLv3+
 
 # Download mirrors
 syslinuxmirror="https://www.kernel.org/pub/linux/utils/boot/syslinux"
-kernelmirror="https://www.kernel.org/pub/linux/kernel/v2.6"
+kernelmirror="https://cdn.kernel.org/pub/linux/kernel/v4.x"
 busyboxmirror="http://busybox.net/downloads"
 libcmirror="http://ftp.gnu.org/gnu/libc"
 grubmirror="http://alpha.gnu.org/gnu/grub"
@@ -13,17 +14,17 @@ grubmirror="http://alpha.gnu.org/gnu/grub"
 endtag=`date +"%Y%m%d-%H%M"`
 
 # Source code filenames
-kernel="linux-2.6.37.tar.bz2"
+kernel="linux-4.19.tar.xz"
 syslinux="syslinux-6.03.tar.gz"
 busybox="busybox-1.27.0.tar.bz2"
-libc="glibc-2.22.tar.gz"
+libc="glibc-2.28.tar.xz"
 grub="grub-2.02~rc2.tar.xz"
 
 # Source directory names
-kerneldir=${kernel//.tar.bz2}
+kerneldir=${kernel//.tar.xz}
 busyboxdir=${busybox//.tar.bz2}
 syslinuxdir=${syslinux//.tar.gz}
-libcdir=${libc//.tar.gz}
+libcdir=${libc//.tar.xz}
 grubdir=${grub//.tar.xz}
 
 # Echo colors
