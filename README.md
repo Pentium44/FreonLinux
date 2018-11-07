@@ -3,6 +3,7 @@
 Simple script that, as of right now, builds Freon Linux distribution that is shipped with glibc, busybox, and a hand full of other utilities.
 
 Changelog:
+ * v0.3.0: Taking a new route with Freon, and now making it a standalone distribution for embedded servers.
  * v0.2.1b: Added build-pkg, in dev. Successfully builds TCC for Freon's package manager.
  * v0.2.1: Update: Linux kernel 4.19, GNU C library 2.28. Functioning x64 builds, with built-in onboard network drivers.
  * v0.2.0: Major update, added refer feature. Rebuilds rootfs with freon scripts. Linux headers no longer shipped with finished ISO.

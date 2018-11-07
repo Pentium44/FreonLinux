@@ -1,0 +1,108 @@
+#!/bin/bash
+# Build Freon Linux software from source.
+# Version: 0.1.0
+# (C) Chris Dorman, 2018 GPLv3+
+
+#### Variables ###
+# mirrors
+tccmirror="http://download.savannah.gnu.org/releases/tinycc"
+nanomirror="https://www.nano-editor.org/dist/v3"
+chttpdmirror="https://github.com/Pentium44/chttpd.git"
+ncursesmirror="https://ftp.gnu.org/pub/gnu/ncurses"
+
+# filenames
+tcc="tcc-0.9.27.tar.bz2"
+nano="nano-3.1.tar.xz"
+ncurses="ncurses-6.1.tar.gz"
+
+# folders
+tmpdir="`pwd`/pkgsrc"
+softwaredir="`pwd`/software"
+tccsrcdir=${tcc//.tar.bz2}
+nanosrcdir=${nano//.tar.xz}
+ncursessrcdir=${ncurses//.tar.gz}
+
+# Build simple C toolchain for Freon Linux (tcc)
+
+if [ ! -d "$tmpdir" ]; then
+  echo "Warning: package source directory not found, creating."
+  mkdir $tmpdir > /dev/null 2>&1
+fi
+
+cd $tmpdir
+
+tcc()
+{
+	# Downloading TCC source
+	if [ ! -f "$tcc" ]; then
+		echo "Downloading TCC sources..."
+		wget $tccmirror/$tcc
+		tar -xf $tcc
+	fi
+
+	# Configure TCC
+	cd $tccsrcdir
+	./configure --prefix=$softwaredir
+
+	# Compile
+	make -j20
+	make install
+
+	sleep 2
+}
+
+nano()
+{
+	# Downloading nano source
+	if [ ! -f "$nano" ]; then
+		echo "Downloading nano editor sources..."
+		wget $nanomirror/$nano
+		tar -xf $nano
+	fi
+
+	# Confingure
+	cd $nanosrcdir
+	./configure --prefix=$softwaredir
+
+	# Compile
+	make -j20
+	make install
+}
+
+ncurses()
+{
+	# Downloading nano source
+        if [ ! -f "$ncurses" ]; then
+                echo "Downloading ncurses sources..."
+                wget $ncursesmirror/$ncurses
+                tar -xf $ncurses
+        fi
+
+	# Configure
+	cd $ncursessrcdir
+	./configure --prefix=$softwaredir \
+		--with-shared \
+		--without-debug \
+		--without-normal \
+		--enable-widec 
+
+	# Compile
+	make -j20
+	make install
+}
+
+chttpd()
+{
+	if [ ! -d "$chttpdsrcdir" ]; then
+		git clone $chttpdmirror
+	fi
+
+	cd chttpd
+	make -j20
+}
+
+case $1 in
+	* ) echo "Building $1..."
+		$1
+		rm -r $tmpdir;;
+esac

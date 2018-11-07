@@ -1,9 +1,0 @@
-#!/bin/bash
-# Compress Freon packages and rename for package database
-# (C) Chris Dorman, 2018 GPLv3+
-
-cd $1/$2
-tar -czf $2.tar.gz .
-mv $2.tar.gz $2.pak
-mv $2.pak ../
-
