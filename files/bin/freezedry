@@ -13,11 +13,6 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-if [ ! -f "/usr/share/thaw/installed/liblzma" ]; then
-  echo -e "[$RED Error $NORMAL] Install liblzma from thaw for grub2..."
-  exit 1
-fi
-
 # Move to root of filesystem
 cd /
 

@@ -3,22 +3,26 @@
 # Version: 0.2.1
 # (C) Chris Dorman, 2014-2018 - GPLv3+
 
+workdir=`pwd`
+
 # Download mirrors
 syslinuxmirror="https://www.kernel.org/pub/linux/utils/boot/syslinux"
-kernelmirror="https://cdn.kernel.org/pub/linux/kernel/v4.x"
+kernelmirror="https://cdn.kernel.org/pub/linux/kernel/v5.x"
 busyboxmirror="http://busybox.net/downloads"
 libcmirror="http://ftp.gnu.org/gnu/libc"
 grubmirror="http://alpha.gnu.org/gnu/grub"
+xzmirror="https://tukaani.org/xz"
 
 # endtag used for iso filename, and some rootfs configs
 endtag=`date +"%Y%m%d-%H%M"`
 
 # Source code filenames
-kernel="linux-4.19.tar.xz"
+kernel="linux-5.1.12.tar.xz"
 syslinux="syslinux-6.03.tar.gz"
 busybox="busybox-1.27.0.tar.bz2"
 libc="glibc-2.28.tar.xz"
 grub="grub-2.02~rc2.tar.xz"
+xz="xz-5.2.4.tar.xz"
 
 # Source directory names
 kerneldir=${kernel//.tar.xz}
@@ -26,6 +30,7 @@ busyboxdir=${busybox//.tar.bz2}
 syslinuxdir=${syslinux//.tar.gz}
 libcdir=${libc//.tar.xz}
 grubdir=${grub//.tar.xz}
+xzdir=${xz//.tar.xz}
 
 # Echo colors
 NORMAL="\e[0m"
@@ -114,6 +119,12 @@ get_files()
     status
   fi
   
+  if [ ! -f $xz ]; then
+    echo -n "$xz..."
+    wget $xzmirror/$xz > /dev/null 2>&1
+    status
+  fi
+
   if [ ! -f $libc ]; then
     echo -n "$libc..."
     wget $libcmirror/$libc > /dev/null 2>&1
@@ -311,7 +322,7 @@ do_libc()
   #strip -v lib/* > /dev/null 2>&1
   mkdir ../rootfs/lib64
   cd ../rootfs/lib64
-  ln -s ../lib/ld-2.22.so ld-linux-x86-64.so.2
+  ln -s /lib/ld-2.28.so ld-linux-x86-64.so.2
   status
 
   cd ../..
@@ -323,8 +334,13 @@ do_grub()
 
   echo -e "[$YELLOW Working $NORMAL] Configuring & building bootloader"
   
+  echo -n "Extracting..."
+  if [ ! -d "$xzdir" ]; then
+        tar xf $xz > /dev/null 2>&1
+        status_silent
+  fi
+
   if [ ! -d "$grubdir" ]; then
-    echo -n "Extracting..."
 	tar xf $grub > /dev/null 2>&1
 	status
   fi
@@ -335,15 +351,34 @@ do_grub()
   ./configure --prefix=`pwd`/../rootfs \
 			  --disable-efiemu \
 			  --disable-werror > /dev/null 2>&1
+  status_silent
+
+  cd ../$xzdir
+
+  ./configure --prefix=`pwd`/../rootfs \
+            --disable-static > /dev/null 2>&1
   status
+
+  cd ../$grubdir
   
   echo -n "Compiling..."
   make -j5 > /dev/null 2>&1
+  status_silent
+
+  cd ../$xzdir
+
+  make -j5 > /dev/null 2>&1
   status
-  
+
+  cd ../$grubdir
+
   echo -n "Copying to rootfs..."
   make install > /dev/null 2>&1
+  status_silent
+  cd ../$xzdir
+  make install > /dev/null 2>&1
   status
+  cd ../$grubdir
   
   echo -n "Installing patched grub-mkconfig..."
   rm ../rootfs/sbin/grub-mkconfig > /dev/null 2>&1
@@ -353,11 +388,11 @@ do_grub()
   
   cd ../rootfs
   
-  echo -n "Stripping grub..."
-  strip -s rootfs/bin/grub-* > /dev/null 2>&1
-  strip -s rootfs/sbin/grub-* > /dev/null 2>&1
+  #echo -n "Stripping grub..."
+  #strip -s rootfs/bin/grub-* > /dev/null 2>&1
+  #strip -s rootfs/sbin/grub-* > /dev/null 2>&1
   cd ..
-  status 
+  #status 
   
 }
 
@@ -365,13 +400,6 @@ do_grub()
 do_utilities() {
   echo -e "[$YELLOW Working $NORMAL] Installing Freon utilities"
   echo -n "Copying files..."
-  
-  # Create some directories for thaw
-  cp -a ../files/share/thaw rootfs/usr/share/thaw
-  status_silent
-  
-  mkdir rootfs/tmp/thaw
-  status_silent
   
   cp -a ../files/bin/* rootfs/bin
   status
@@ -784,6 +812,8 @@ case $1 in
 		do_grub
 		configure_system
 		do_utilities
+		cd $workdir
+		./build-extensions all
 		gen_rootfs
 		do_isolinux
 		gen_iso;;
