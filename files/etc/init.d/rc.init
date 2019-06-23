@@ -78,5 +78,8 @@ status
 # clear screen before getty is enabled
 clear
 
+# set environment variables
+env TERMINFO="/usr/share/terminfo"
+
 # Show login prompt
 getty 9600 tty1

@@ -4,6 +4,7 @@
 # (C) Chris Dorman, 2014-2018 - GPLv3+
 
 workdir=`pwd`
+corecount=25
 
 # Download mirrors
 syslinuxmirror="https://www.kernel.org/pub/linux/utils/boot/syslinux"
@@ -157,10 +158,10 @@ do_kernel()
 
   echo -n "Building kernel base..."
   if [ "$verbose" == "1" ]; then
-    make bzImage -j20
+    make bzImage -j$corecount
     status
   else
-    make bzImage -j20 > /dev/null 2>&1
+    make bzImage -j$corecount > /dev/null 2>&1
     status
   fi
 
@@ -206,10 +207,10 @@ do_busybox()
 
   echo -n "Building..."
   if [ "$verbose" == "1" ]; then 
-    make -j20
+    make -j$corecount
     status
   else
-    make -j20 > /dev/null 2>&1
+    make -j$corecount > /dev/null 2>&1
     status
   fi
   
@@ -277,7 +278,7 @@ do_libc()
     make install-bootstrap-headers=yes install-headers
     status
     
-    make -j20 csu/subdir_lib
+    make -j$corecount csu/subdir_lib
     status
     
     install csu/crt1.o csu/crti.o csu/crtn.o `pwd`/../rootfs/lib
@@ -288,13 +289,13 @@ do_libc()
 	-nostartfiles -shared -x c /dev/null -o `pwd`/../rootfs/lib/libc.so
     status
     
-    make -j20
+    make -j$corecount
     status
   else
     make install-bootstrap-headers=yes install-headers > /dev/null 2>&1
     status_silent
     
-    make -j20 csu/subdir_lib > /dev/null 2>&1
+    make -j$corecount csu/subdir_lib > /dev/null 2>&1
     status_silent
     
     install csu/crt1.o csu/crti.o csu/crtn.o `pwd`/../rootfs/lib > /dev/null 2>&1
@@ -305,7 +306,7 @@ do_libc()
 	-nostartfiles -shared -x c /dev/null -o `pwd`/../rootfs/lib/libc.so 2>&1
     status_silent
     
-    make -j20 > /dev/null 2>&1
+    make -j$corecount > /dev/null 2>&1
     status
   fi
   
@@ -362,12 +363,12 @@ do_grub()
   cd ../$grubdir
   
   echo -n "Compiling..."
-  make -j5 > /dev/null 2>&1
+  make -j$corecount > /dev/null 2>&1
   status_silent
 
   cd ../$xzdir
 
-  make -j5 > /dev/null 2>&1
+  make -j$corecount > /dev/null 2>&1
   status
 
   cd ../$grubdir
@@ -485,6 +486,10 @@ networks:   files
   #cp -a ../$kerneldir/_hdr/* .
   #status
   
+  echo -n "Compiling termtypes for core terminfo...."
+  tic -o ./usr/share/terminfo ../../files/terminfo/termtypes > /dev/null 2>&1
+  status
+
   echo -n "Finishing up..."
   echo "# /etc/securetty: List of terminals on which root is allowed to login.
 #
@@ -590,7 +595,7 @@ gen_rootfs()
 {
   echo -e "[$YELLOW Working $NORMAL] Generating filesystem..."
   
-  cd rootfs
+  cd src/rootfs
   
   echo -n "Stripping build..."
   strip -s lib/*.so > /dev/null 2>&1
@@ -814,6 +819,7 @@ case $1 in
 		do_utilities
 		cd $workdir
 		./build-extensions all
+		cd $workdir
 		gen_rootfs
 		do_isolinux
 		gen_iso;;

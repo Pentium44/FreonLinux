@@ -177,8 +177,8 @@ zlib()
         make -j20
         make install
 
-	mv -v ../../src/rootfs/usr/lib/libz.so.* ../../src/rootfs/lib
-	ln -sfv ../../src/rootfs/lib/libz.so ../../src/rootfs/usr/lib/libz.so
+	# mv -v ../../src/rootfs/usr/lib/libz.so.* ../../src/rootfs/lib
+	# ln -sfv ../../src/rootfs/lib/libz.so ../../src/rootfs/usr/lib/libz.so
 
         cd ..
 }
@@ -201,7 +201,7 @@ chttpd()
 
 case $1 in
 	all ) echo "Building all!"
-		ncurses; nano; chttpd; tcc; bash; termcap; zlib;;
+		ncurses; nano; chttpd; tcc; bash; termcap; zlib; cd $tmpdir/../;;
 	* ) echo "Building $1..."
 		$1;;
 esac
