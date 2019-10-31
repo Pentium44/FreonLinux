@@ -68,6 +68,10 @@ case $1 in
 	    
 	    zcat rootfs.gz | cpio -id > /dev/null 2>&1
 	    status
+
+	    echo -n "Removing filesystem archive..."
+	    rm rootfs.gz
+	    status
 	    
 	    echo -e "[$YELLOW Working $NORMAL] Installing bootloader to $DEVICE"
 	    echo -n "Executing grub-install..."

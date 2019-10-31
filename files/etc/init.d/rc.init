@@ -4,6 +4,9 @@
 . /etc/conf.d/main.conf
 . /etc/conf.d/static_network.conf
 
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export LD_LIBRARY_PATH=/lib:/lib64:/usr/lib
+
 # clear
 clear
 
@@ -75,11 +78,15 @@ echo -n "Loading Keymap..."
 /sbin/loadkmap < /usr/share/kmap/$KMAP.kmap
 status
 
+/etc/init.d/dropbear start
+
+/etc/init.d/chttpd start
+
+export TERM="xterm"
+export TERMINFO="/share/terminfo"
+
 # clear screen before getty is enabled
 clear
-
-# set environment variables
-env TERMINFO="/usr/share/terminfo"
 
 # Show login prompt
 getty 9600 tty1

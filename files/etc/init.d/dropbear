@@ -1,0 +1,23 @@
+#!/bin/sh
+# Start dropbear services - Freon Linux
+
+. /etc/conf.d/status
+
+DROPBEAR_PORT=22
+DROPBEAR_RSAKEY=/etc/dropbear/dropbear_rsa_host_key
+DROPBEAR_DSSKEY=/etc/dropbear/dropbear_dss_host_key
+DROPBEAR_RECEIVE_WINDOW=65535
+
+if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
+	dropbearkey -t rsa -f $DROPBEAR_RSAKEY
+fi
+
+if [ ! -f /etc/dropbear/dropbear_dss_host_key ]; then
+	dropbearkey -t dss -f $DROPBEAR_DSSKEY
+fi
+
+case $1 in
+	start ) echo -n "Starting dropbear services..."; dropbear -d $DROPBEAR_DSSKEY -r $DROPBEAR_RSAKEY -p $DROPBEAR_PORT -W $DROPBEAR_RECEIVE_WINDOW; status;;
+	stop ) echo -n "Stopping dropbear services..."; killall dropbear; status;;
+	* ) echo "Usage: dropbear [start|stop].";;
+esac

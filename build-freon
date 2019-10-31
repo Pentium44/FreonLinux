@@ -426,7 +426,7 @@ configure_system()
   echo -n "Laying out filesystem tree..."
   mkdir -p dev etc root home proc media mnt sys tmp var
   mkdir -p usr/{lib,local,share,games} \
-   var/{cache,lib,lock,log,games,run,spool} \
+   var/{cache,lib,lock,log,games,run,spool,www} \
    media/{cdrom,flash,usbdisk}
   
   echo -n "Filling /dev..."
@@ -562,10 +562,7 @@ sysfs           /sys         sysfs   defaults          0       0
 devpts          /dev/pts     devpts  defaults          0       0
 tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
 
-  mkdir etc/init.d
- 
-  cp ../../files/etc/init.d/rc.init etc/init.d/
-  cp -a ../../files/etc/conf.d etc
+  cp -a ../../files/etc/* etc
   
   cd usr/share
   mkdir kmap
@@ -599,7 +596,11 @@ gen_rootfs()
   
   echo -n "Stripping build..."
   strip -s lib/*.so > /dev/null 2>&1
+  strip -s lib/*.so* > /dev/null 2>&1
   strip -s bin/busybox > /dev/null 2>&1
+  strip -s bin/bash > /dev/null 2>&1
+  strip -s sbin/chttpd > /dev/null 2>&1
+  rm lib/*.a
   status
   
   echo -n "Compressing filesystem..."
@@ -795,10 +796,7 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
 
   rm etc/init.d/*
   rm etc/conf.d/*
-  
-  cp ../../files/etc/init.d/rc.init etc/init.d/
-  cp -a ../../files/etc/conf.d etc
-  
+  cp -a ../../files/etc/* etc # Copy files/etc to filesystem (init scripts)
   cd ..
 }
 

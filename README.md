@@ -3,6 +3,7 @@
 Simple script that, as of right now, builds Freon Linux distribution that is shipped with glibc, busybox, and a hand full of other utilities.
 
 Changelog:
+ * v0.4.1: Added a couple of utilities to build-extensions. dropbear SSH2 client, htop, as well as reconfiguring chttpd for web hosting.
  * v0.4.0: 
 	Freon Linux is now functional with the capabilities of installing on most hardware. Kernel is mostly static, no modules for devices.
 	Also included the following updates: kernel-5.1.12 update, liblzma is built in for grub2, and some software added in build-extensions.

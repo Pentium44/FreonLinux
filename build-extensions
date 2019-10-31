@@ -8,10 +8,13 @@
 tccmirror="http://download.savannah.gnu.org/releases/tinycc"
 nanomirror="https://www.nano-editor.org/dist/v3"
 chttpdmirror="https://github.com/Pentium44/chttpd.git"
+ftpmirror="https://github.com/Harlonxl/minFTPD.git"
 ncursesmirror="https://ftp.gnu.org/pub/gnu/ncurses"
 bashmirror="https://ftp.gnu.org/gnu/bash"
 zlibmirror="https://zlib.net"
 termcapmirror="https://ftp.gnu.org/gnu/termcap"
+dropbearmirror="https://matt.ucc.asn.au/dropbear/releases"
+htopmirror="https://hisham.hm/htop/releases/2.2.0"
 
 # filenames
 tcc="tcc-0.9.27.tar.bz2"
@@ -20,6 +23,8 @@ ncurses="ncurses-6.1.tar.gz"
 bash="bash-5.0.tar.gz"
 zlib="zlib-1.2.11.tar.xz"
 termcap="termcap-1.3.1.tar.gz"
+dropbear="dropbear-2019.78.tar.bz2"
+htop="htop-2.2.0.tar.gz"
 
 # folders
 tmpdir="`pwd`/pkgsrc"
@@ -30,6 +35,8 @@ ncursessrcdir=${ncurses//.tar.gz}
 bashsrcdir=${bash//.tar.gz}
 zlibsrcdir=${zlib//.tar.xz}
 termcapsrcdir=${termcap//.tar.gz}
+dropbearsrcdir=${dropbear//.tar.bz2}
+htopsrcdir=${htop//.tar.gz}
 
 # Build simple C toolchain for Freon Linux (tcc)
 
@@ -75,6 +82,60 @@ tcc()
 	make install
 	cd ..
 	sleep 2
+}
+
+htop()
+{
+        # Downloading TCC source
+        if [ ! -f "$htop" ]; then
+                echo "Downloading TCC sources..."
+                wget $htopmirror/$htop
+                tar -xf $htop
+        fi
+
+        # Configure TCC
+        cd $htopsrcdir
+        ./configure --prefix=$softwaredir
+
+        # Compile
+        make -j20
+        make install
+        cd ..
+}
+
+dropbear()
+{
+        # Downloading dropbear source
+        if [ ! -f "$dropbear" ]; then
+                echo "Downloading Dropbear sources..."
+                wget $dropbearmirror/$dropbear
+                tar -xf $dropbear
+        fi
+
+        # Configure dropbear
+        cd $dropbearsrcdir
+
+	cp -v options.h options.h.backup
+	sed -e "s@/dev/random@/dev/urandom@" options.h.backup > options.h
+	./configure --prefix=$softwaredir
+
+        # Compile
+        make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" MULTI=1
+        make MULTI=1 PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" install
+
+        mkdir -pv $softwaredir/etc/dropbear
+	rm $softwaredir/sbin/dropbear
+	rm $softwaredir/bin/{dropbearconvert,dropbearkey,scp,dbclient}
+
+	cd $softwaredir/bin
+
+	ln -svf dropbearmulti dropbear
+	ln -svf dropbearmulti dbclient
+	ln -svf dropbearmulti dropbearkey
+	ln -svf dropbearmulti dropbearconvert
+	ln -svf dropbearmulti scp
+
+        cd $tmpdir
 }
 
 termcap()
@@ -157,6 +218,8 @@ ncurses()
 	ln -s libncurses.so.5 libtinfo.so.5 
         ln -s libtinfo.so.5 libtinfo.so
 
+        ln -s libncursesw.so.6 libncursesw.so.5
+
 	cd ../../../pkgsrc
 }
 
@@ -186,7 +249,7 @@ zlib()
 
 chttpd()
 {
-	if [ ! -d "$chttpdsrcdir" ]; then
+	if [ ! -d "chttpd" ]; then
 		git clone $chttpdmirror
 	fi
 
@@ -195,13 +258,28 @@ chttpd()
 
         cp chttpd ../../src/rootfs/sbin/
 	cp inc/chttpd.conf ../../src/rootfs/etc
-	cp inc/start_chttpd ../../src/rootfs/etc/init.d
+	cp inc/chttpd ../../src/rootfs/etc/init.d
 	cd ..
 }
 
+ftp()
+{
+        if [ ! -d "minFTPD" ]; then
+                git clone $ftpmirror
+        fi
+
+        cd minFTPD
+        make -j20
+
+        cp minFTPD ../../src/rootfs/sbin/
+	cp miniFTPD.conf ../../src/rootfs/etc/
+
+}
+
+
 case $1 in
 	all ) echo "Building all!"
-		ncurses; nano; chttpd; tcc; bash; termcap; zlib; cd $tmpdir/../;;
+		ncurses; nano; chttpd; tcc; bash; termcap; zlib; dropbear; htop cd $tmpdir/../;;
 	* ) echo "Building $1..."
 		$1;;
 esac
