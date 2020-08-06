@@ -534,8 +534,10 @@ tty2::askfirst:-/bin/sh
 
   echo "# /etc/profile: system-wide .profile file for the Bourne shells
 
-PATH=\"/usr/sbin:/usr/bin:/sbin:/bin\"
-LD_LIBRARY_PATH=\"/usr/lib:/lib\"
+PATH=\"/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin:/usr/local/sbin\"
+LD_LIBRARY_PATH=\"/usr/lib:/lib:/usr/local/lib\"
+TERM=\"xterm\"
+TERMINFO=\"/usr/local/share/terminfo\"
 
 NORMAL=\"\\[\\e[0m\\]\"
 RED=\"\\[\\e[0;31m\\]\"
@@ -567,7 +569,7 @@ tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
   cd usr/share
   mkdir kmap
   
-  cp -a ../../../../files/share/udhcpc .
+  cp -av ../../../../files/share/* .
   
   chmod +x udhcpc/default.script
   
@@ -684,126 +686,19 @@ do_refer()
   
   cd rootfs
   
-  echo -n "Configuring networking..."
-  echo "127.0.0.1	localhost" > etc/hosts
-  echo "localhost	127.0.0.1" > etc/networks
-  echo "linux" > etc/hostname
-  echo "order hosts,bind" > etc/host.conf 
-  echo "multi on" >> etc/host.conf 
-  
-  echo "# loopback
-auto lo
-iface lo inet loopback
-
-# Ethernet // this is default and can be changed for per system
-auto eth0
-iface eth0 inet dhcp
-" > etc/network/interfaces
-  
-  echo "
-# /etc/nsswitch.conf: GNU Name Service Switch config.
-#
-
-passwd:     files
-group:      files
-shadow:     files
-
-hosts:      files dns
-networks:   files
-" > etc/nsswitch.conf 
-  status
-  
-  echo -n "Setting up default users and groups..."
-  echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
-  echo "root::13525:0:99999:7:::" > etc/shadow
-  echo "root:x:0:" > etc/group
-  echo "root:*::" > etc/gshadow
-  chmod 640 etc/shadow
-  chmod 640 etc/gshadow
-  status
-  
-  echo -n "Finishing up..."
-  echo "# /etc/securetty: List of terminals on which root is allowed to login.
-#
-console
-
-# For people with serial port consoles
-ttyS0
-
-# Standard consoles
-tty1
-tty2
-tty3
-tty4
-tty5
-tty6
-tty7" > etc/securetty
-
-  echo "/bin/sh" > etc/shells
-  echo "/bin/ash" >> etc/shells
-  
-  echo "Freon Linux $endtag \r \l" > etc/issue
-  echo "" >> etc/issue
-  
-  echo "Freon Linux, welcome..." > etc/motd
-
-  echo "[SUID]
-# Allow command to be run by anyone.
-su = ssx root.root
-passwd = ssx root.root
-loadkmap = ssx root.root
-mount = ssx root.root
-reboot = ssx root.root
-halt = ssx root.root" > etc/busybox.conf 
-
-  chmod 600 etc/busybox.conf 
-  
-  echo "::sysinit:/etc/init.d/rc.init
-::respawn:-/bin/sh
-tty2::askfirst:-/bin/sh
-::ctrlaltdel:/bin/umount -a -r
-::ctrlaltdel:/sbin/reboot" > etc/inittab
-
-  echo "# /etc/profile: system-wide .profile file for the Bourne shells
-
-PATH=\"/usr/sbin:/usr/bin:/sbin:/bin\"
-LD_LIBRARY_PATH=\"/usr/lib:/lib\"
-
-NORMAL=\"\\[\\e[0m\\]\"
-RED=\"\\[\\e[0;31m\\]\"
-GREEN=\"\\[\\e[0;32m\\]\"
-BLUE=\"\\[\\e[0;34m\\]\"
-YELLOW=\"\\[\\e[1;33m\\]\"
-MAGENTA=\"\\[\\e[0;35m\\]\"
-CYAN=\"\\[\\e[0;36m\\]\"
-
-if [ \"\`id -u\`\" -eq 0 ]; then
-  PS1=\"$RED\\u$GREEN@$BLUE\\h [ $MAGENTA\\w$BLUE ]# \$NORMAL\"
-else
-  PS1=\"$RED\\u$GREEN@$BLUE\\h [ $MAGENTA\\w$BLUE ]\\\$ \$NORMAL\"
-fi
-
-export PATH LD_LIBRARY_PATH PS1 DISPLAY ignoreeof
-umask 022
-
-export G_FILENAME_ENCODING=iso8859-1
-" > etc/profile
-
-  echo "proc            /proc        proc    defaults          0       0
-sysfs           /sys         sysfs   defaults          0       0
-devpts          /dev/pts     devpts  defaults          0       0
-tmpfs           /dev/shm     tmpfs   defaults          0       0" > etc/fstab
-
   rm etc/init.d/*
   rm etc/conf.d/*
-  cp -a ../../files/etc/* etc # Copy files/etc to filesystem (init scripts)
+  cp -av ../../files/etc/* etc/ # Copy files/etc to filesystem (init scripts)
+  cp -av ../../files/bin/* bin/ # Copy installer and package manager
+  cp -av ../../files/share/* share/ # Stuffs
+
   cd ..
 }
 
 cd src
 
 case $1 in
-	refer) do_refer
+	refer)  do_refer
 		regen_rootfs_bare
 		do_isolinux
 		gen_iso;;

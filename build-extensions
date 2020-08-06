@@ -279,7 +279,7 @@ ftp()
 
 case $1 in
 	all ) echo "Building all!"
-		ncurses; nano; chttpd; tcc; bash; termcap; zlib; dropbear; htop cd $tmpdir/../;;
+		ncurses; nano; chttpd; tcc; bash; termcap; zlib; dropbear; cd $tmpdir/../;;
 	* ) echo "Building $1..."
 		$1;;
 esac

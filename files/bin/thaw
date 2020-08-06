@@ -11,19 +11,19 @@
 . /etc/conf.d/status
 
 # Nutrapak root
-THAWROOT="/usr/share/thaw"
+THAWROOT="/share/thaw"
 # Package list
-PKGLIST="/usr/share/thaw/package.list"
+PKGLIST="/share/thaw/info.lst"
 # Package list name (could change in the future)
-PKGLISTNAME="package.list"
+PKGLISTNAME="info.lst"
 # Mirror file
-MIRRORFILE="/usr/share/thaw/mirror.txt"
-# Dependencies path
-DEPPATH="/usr/share/thaw/deps"
+MIRRORFILE="/share/thaw/mirror.txt"
+# TCZ mount point
+TCZMOUNT="/mnt/pkg"
 # Temp path
 TMPPATH="/tmp/thaw"
 # Installed package dir
-INSTALLEDPKG="/usr/share/thaw/installed"
+INSTALLEDPKG="/share/thaw/installed"
 
 if [ $(id -u) != "0" ]; then
 	echo "Error: must be root to operate this command."
@@ -31,8 +31,13 @@ if [ $(id -u) != "0" ]; then
 fi
 
 # Check Thaw root directory
-if [ ! -d "$DEPPATH" ]; then
-	mkdir $DEPPATH
+if [ ! -d "$TCZMOUNT" ]; then
+	mkdir $TCZMOUNT
+fi
+
+# Check Thaw tmp directory
+if [ ! -d "$TMPPATH" ]; then
+        mkdir $TMPPATH
 fi
 
 # Check if any packages are installed, if not fix before break
@@ -56,27 +61,26 @@ case $1 in
 			exit 0
 		fi
 		
+		if [ ! -d $TMPPATH/$2 ]; then
+                        mkdir $TMPPATH/$2
+                fi
+
 		# Check to see if package exists, if so download
 		echo "Checking ${2}'s existence... "
 		if grep "$2" $PKGLIST > /dev/null
 		then
 			echo ""
 			echo "Downloading ${2}..."
-			wget $(cat $MIRRORFILE)/$2.pak -P $DEPPATH
+			
+			wget $(cat $MIRRORFILE)/$2.tcz -P $TMPPATH/$2
+			wget $(cat $MIRRORFILE)/$2.tcz.dep -P $TMPPATH/$2
 		else
 			echo "${2} was not found in repository."
 			exit 1
 		fi
 		
-		echo -n "Extracting package to tmp... "
-		mv $DEPPATH/$2.pak $DEPPATH/$2.tar.gz
-		mkdir $TMPPATH/$2
-		gunzip $DEPPATH/$2.tar.gz
-		tar -xf $DEPPATH/$2.tar -C $TMPPATH/$2
-		status_serious
-		
 		# Examine dependencies for package
-		if [ -f "$TMPPATH/$2/deps" ]; then
+		if [ -f "$TMPPATH/$2/$2.tcz.dep" ]; then
 			i=1
 			echo ""
 			echo "++++++++++++++++++++++++++++++++++++++++"
@@ -84,12 +88,11 @@ case $1 in
 			echo "++++++++++++++++++++++++++++++++++++++++"
 			while read line; do
 				if [ -f "$INSTALLEDPKG/$line" ]; then
-					echo "$i: $line - INSTALLED"
+					echo "$line - INSTALLED"
 				else
-					echo "$i: $line"
+					echo "$line"
 				fi
-				((i++))
-			done < $TMPPATH/$2/deps
+			done < $TMPPATH/$2/$2.tcz.dep
 			echo "++++++++++++++++++++++++++++++++++++++++"
 			echo "Installing dependencies..."
 			echo "++++++++++++++++++++++++++++++++++++++++"
@@ -98,33 +101,37 @@ case $1 in
 					echo "${line} already installed"
 				else
 					echo "Installing ${line} for ${2}"
-					thaw get-install $line
+					thaw get-install ${line%.tcz}
 				fi
-			done < $TMPPATH/$2/deps
+			done < $TMPPATH/$2/$2.tcz.dep
 			echo "++++++++++++++++++++++++++++++++++++++++"
 			
 		fi
 		
+		echo -n "Extracting package to tmp... "
+
+                mount -o loop $TMPPATH/$2/$2.tcz $TCZMOUNT
+                status_serious
+
 		echo -n "Installing ${2}..."
-		if [ -f "$TMPPATH/$2/deps" ]; then
-			rm $TMPPATH/$2/deps
+		if [ -f "$TMPPATH/$2/$2.tcz.dep" ]; then
+			rm $TMPPATH/$2/$2.tcz.dep
 		fi
 		
-		cp -a $TMPPATH/$2/* /
+		cp -av $TCZMOUNT/* /
 		status_serious
 		
-		if [ -f "$TMPPATH/$2/execute.sh" ]; then
-			echo "Running ${2}'s execution script..."
-			$TMPPATH/$2/execute.sh
-		fi
+		#if [ -f "$TMPPATH/$2/execute.sh" ]; then
+		#	echo "Running ${2}'s execution script..."
+		#	$TMPPATH/$2/execute.sh
+		#fi
 		
-		if [ -f "/execute.sh" ]; then
-			rm /execute.sh
-		fi
+		#if [ -f "/execute.sh" ]; then
+		#	rm /execute.sh
+		#fi
 		
 		echo -n "Cleaning up..."
 		rm -r $TMPPATH/$2
-		rm $DEPPATH/$2.tar
 		status
 		
 		echo -n "Marking ${2} in the installation database..."
@@ -163,7 +170,7 @@ case $1 in
 	* )
 		echo "Usage: 	
 thaw get-install <package> : Install a package
-thaw update-list           : Update system package list
+thaw update                : Update system package list
 thaw search <query>        : Search for a package in the database
 		"
 		;;

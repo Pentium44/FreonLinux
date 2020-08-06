@@ -1,1 +1,1 @@
-http://cddo.cf/pub/freon/packages
+http://192.168.0.57/pub/freon/pkgs

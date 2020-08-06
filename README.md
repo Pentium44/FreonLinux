@@ -3,6 +3,7 @@
 Simple script that, as of right now, builds Freon Linux distribution that is shipped with glibc, busybox, and a hand full of other utilities.
 
 Changelog:
+ * v0.4.2: Adding some functionality to thaw (package manager). Using TinyCoreLinux 9.x package repository for some extension to the OS without bloating the disk size.  
  * v0.4.1: Added a couple of utilities to build-extensions. dropbear SSH2 client, htop, as well as reconfiguring chttpd for web hosting.
  * v0.4.0: 
 	Freon Linux is now functional with the capabilities of installing on most hardware. Kernel is mostly static, no modules for devices.
