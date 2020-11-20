@@ -1,11 +1,17 @@
 #!/bin/bash
 # Build Freon Linux software from source.
-# Version: 0.1.0
+# Version: 0.1.1
 # (C) Chris Dorman, 2018 GPLv3+
+
+corecount="25"
 
 #### Variables ###
 # mirrors
-tccmirror="http://download.savannah.gnu.org/releases/tinycc"
+mpfrmirror="https://ftp.gnu.org/gnu/mpfr"
+mpcmirror="https://ftp.gnu.org/gnu/mpc"
+gmpmirror="https://ftp.gnu.org/gnu/gmp"
+binutilsmirror="https://ftp.gnu.org/gnu/binutils"
+gccmirror="http://ftp.gnu.org/gnu/gcc/gcc-9.2.0"
 nanomirror="https://www.nano-editor.org/dist/v3"
 chttpdmirror="https://github.com/Pentium44/chttpd.git"
 ftpmirror="https://github.com/Harlonxl/minFTPD.git"
@@ -17,7 +23,7 @@ dropbearmirror="https://matt.ucc.asn.au/dropbear/releases"
 htopmirror="https://hisham.hm/htop/releases/2.2.0"
 
 # filenames
-tcc="tcc-0.9.27.tar.bz2"
+gcc="gcc-9.2.0.tar.xz"
 nano="nano-3.1.tar.xz"
 ncurses="ncurses-6.1.tar.gz"
 bash="bash-5.0.tar.gz"
@@ -25,11 +31,15 @@ zlib="zlib-1.2.11.tar.xz"
 termcap="termcap-1.3.1.tar.gz"
 dropbear="dropbear-2019.78.tar.bz2"
 htop="htop-2.2.0.tar.gz"
+binutils="binutils-2.31.1.tar.xz"
+gmp="gmp-6.1.2.tar.xz"
+mpfr="mpfr-4.0.2.tar.xz"
+mpc="mpc-1.1.0.tar.xz"
 
 # folders
 tmpdir="`pwd`/pkgsrc"
 softwaredir="`pwd`/src/rootfs"
-tccsrcdir=${tcc//.tar.bz2}
+gccsrcdir=${gcc//.tar.xz}
 nanosrcdir=${nano//.tar.xz}
 ncursessrcdir=${ncurses//.tar.gz}
 bashsrcdir=${bash//.tar.gz}
@@ -64,23 +74,41 @@ bash()
 	cd ..
 }
 
-tcc()
+gcc()
 {
-	# Downloading TCC source
-	if [ ! -f "$tcc" ]; then
-		echo "Downloading TCC sources..."
-		wget $tccmirror/$tcc
-		tar -xf $tcc
+	# Downloading GCC source
+	if [ ! -f "$gcc" ]; then
+		echo "Downloading GCC sources..."
+		wget $gccmirror/$gcc
+		tar -xf $gcc
 	fi
 
-	# Configure TCC
-	cd $tccsrcdir
-	./configure --prefix=$softwaredir
+	case $(uname -m) in
+		x86_64)
+		sed -e '/m64=/s/lib64/lib/' \
+			-i.orig gcc/config/i386/t-linux64
+		;;
+	esac
 
+	# Configure TCC
+	cd $gccsrcdir
+	
+	mkdir -v build
+	cd build
+	
+	SED=sed
+	../configure --prefix=$softwaredir \
+				--enable-languages=c,c++ \
+				--disable-multilib       \
+				--disable-bootstrap      \
+				--with-system-zlib
+		
 	# Compile
-	make -j20
+	make -j$corecount
+	
 	make install
-	cd ..
+	
+	cd ../..
 	sleep 2
 }
 
@@ -246,6 +274,20 @@ zlib()
         cd ..
 }
 
+mpc()
+{
+	
+}
+
+mpfr()
+{
+	
+}
+
+gmp()
+{
+	
+}
 
 chttpd()
 {
@@ -279,7 +321,7 @@ ftp()
 
 case $1 in
 	all ) echo "Building all!"
-		ncurses; nano; chttpd; tcc; bash; termcap; zlib; dropbear; cd $tmpdir/../;;
+		ncurses; nano; chttpd; gcc; bash; termcap; zlib; dropbear; cd $tmpdir/../;;
 	* ) echo "Building $1..."
 		$1;;
 esac
